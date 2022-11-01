@@ -15,57 +15,7 @@
 	* Dan Venkitachalam - for finding some non-compliant DDS files, and patching some explicit casts
 	* everybody at gamedev.net
 */
-
-#define SOIL_CHECK_FOR_GL_ERRORS 0
-
-#if defined( __APPLE_CC__ ) || defined ( __APPLE__ )
-	#include <TargetConditionals.h>
-
-	#if defined( __IPHONE__ ) || ( defined( TARGET_OS_IPHONE ) && TARGET_OS_IPHONE ) || ( defined( TARGET_IPHONE_SIMULATOR ) && TARGET_IPHONE_SIMULATOR )
-		#define SOIL_PLATFORM_IOS
-		#include <dlfcn.h>
-	#else
-		#define SOIL_PLATFORM_OSX
-	#endif
-#elif defined( __ANDROID__ ) || defined( ANDROID )
-	#define SOIL_PLATFORM_ANDROID
-#elif ( defined ( linux ) || defined( __linux__ ) || defined( __FreeBSD__ ) || defined(__OpenBSD__) || defined( __NetBSD__ ) || defined( __DragonFly__ ) || defined( __SVR4 ) )
-	#define SOIL_X11_PLATFORM
-#endif
-
-#if ( defined( SOIL_PLATFORM_IOS ) || defined( SOIL_PLATFORM_ANDROID ) ) && ( !defined( SOIL_GLES1 ) && !defined( SOIL_GLES2 ) )
-	#define SOIL_GLES2
-#endif
-
-#if defined( SOIL_GLES2 )
-
-	#define APIENTRY GL_APIENTRY
-#elif defined( SOIL_GLES1 )
-	#define APIENTRY GL_APIENTRY
-#else
-
-#if defined( __WIN32__ ) || defined( _WIN32 ) || defined( WIN32 )
-	#define SOIL_PLATFORM_WIN32
-	#define WIN32_LEAN_AND_MEAN
-	#include <windows.h>
-	#include <wingdi.h>
-	
-	#ifndef GL_UNSIGNED_SHORT_4_4_4_4
-	#define GL_UNSIGNED_SHORT_4_4_4_4 0x8033
-	#endif
-	#ifndef GL_UNSIGNED_SHORT_5_5_5_1
-	#define GL_UNSIGNED_SHORT_5_5_5_1 0x8034
-	#endif
-	#ifndef GL_UNSIGNED_SHORT_5_6_5
-	#define GL_UNSIGNED_SHORT_5_6_5 0x8363
-	#endif
-#elif defined(__APPLE__) || defined(__APPLE_CC__)
-	/*	I can't test this Apple stuff!	*/
-	#define APIENTRY
-#elif defined( SOIL_X11_PLATFORM )
-#endif
-
-#endif
+#define APIENTRY
 
 
 #include "SOIL2.h"
@@ -1634,16 +1584,8 @@ int query_cubemap_capability( void )
 
 static P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC get_glCompressedTexImage2D_addr()
 {
-	/*	and find the address of the extension function	*/
-	P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC ext_addr = NULL;
 	
-#if defined( SOIL_PLATFORM_WIN32 ) || defined( SOIL_PLATFORM_OSX ) || defined( SOIL_X11_PLATFORM )
-	ext_addr = (P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC)SOIL_GL_GetProcAddress( "glCompressedTexImage2D" );
-#else
-	ext_addr = (P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC)&glCompressedTexImage2D;
-#endif
-	
-	return ext_addr;
+	return NULL;
 }
 
 int query_DXT_capability( void )
