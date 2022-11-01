@@ -55,7 +55,7 @@ OPTFLAGS1	=	-funroll-loops -O2
 OPTFLAGS2	=	-pipe -funroll-loops -Ofast
 
 #	Framework
-FRAMEWORK	=	OpenGL Cocoa
+FRAMEWORK	=
 
 #################
 ##  COLORS     ##
