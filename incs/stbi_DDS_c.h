@@ -3,6 +3,7 @@
 ///	(use SOIL for that ;-)
 
 #include "image_DXT.h"
+#define _CRT_SECURE_NO_WARNINGS
 
 static int stbi__dds_test(stbi__context *s)
 {

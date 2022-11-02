@@ -16,7 +16,7 @@
 	* everybody at gamedev.net
 */
 #define APIENTRY
-
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "SOIL2.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -77,61 +77,19 @@ int query_DXT_capability( void );
 #define SOIL_RGBA_S3TC_DXT5		0x83F3
 #define SOIL_GL_COMPRESSED_SRGB_S3TC_DXT1_EXT  0x8C4C
 #define SOIL_GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
-static int has_sRGB_capability = SOIL_CAPABILITY_UNKNOWN;
-int query_sRGB_capability( void );
 typedef void (APIENTRY * P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC) (int i);
 static P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC soilGlCompressedTexImage2D = NULL;
 
-typedef void (APIENTRY *P_SOIL_GLGENERATEMIPMAPPROC)(int i);
-static P_SOIL_GLGENERATEMIPMAPPROC soilGlGenerateMipmap = NULL;
-
-static int has_gen_mipmap_capability = SOIL_CAPABILITY_UNKNOWN;
-static int query_gen_mipmap_capability( void );
-
 static int has_PVR_capability = SOIL_CAPABILITY_UNKNOWN;
 int query_PVR_capability( void );
-static int has_BGRA8888_capability = SOIL_CAPABILITY_UNKNOWN;
-int query_BGRA8888_capability( void );
-static int has_ETC1_capability = SOIL_CAPABILITY_UNKNOWN;
-int query_ETC1_capability( void );
-
-/* GL_IMG_texture_compression_pvrtc */
-#define SOIL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG                      0x8C00
-#define SOIL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG                      0x8C01
-#define SOIL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG                     0x8C02
-#define SOIL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG                     0x8C03
-#define SOIL_GL_ETC1_RGB8_OES                                     0x8D64
-
-#if defined( SOIL_X11_PLATFORM ) || defined( SOIL_PLATFORM_WIN32 ) || defined( SOIL_PLATFORM_OSX )
-static int isAtLeastGL3()
-{
-	static int is_gl3 = SOIL_CAPABILITY_UNKNOWN;
-
-	return is_gl3;
-}
-#endif
-
-#ifdef SOIL_PLATFORM_WIN32
-static int soilTestWinProcPointer(const PROC pTest)
-{
-	ptrdiff_t iTest;
-	if(!pTest) return 0;
-	iTest = (ptrdiff_t)pTest;
-	if(iTest == 1 || iTest == 2 || iTest == 3 || iTest == -1) return 0;
-	return 1;
-}
-#endif
 
 void * SOIL_GL_GetProcAddress(const char *proc) {
-	void *func = NULL;
-
-	return func;
+	return NULL;
 }
 
 /* Based on the SDL2 implementation */
 int SOIL_GL_ExtensionSupported(const char *extension)
 {
-	
 	return 0;
 }
 
@@ -227,47 +185,7 @@ unsigned int
 		unsigned int flags
 	)
 {
-	/*	variables	*/
-	unsigned char* img = NULL;
-	int width, height, channels;
-	unsigned int tex_id;
-	/*	no direct uploading of the image as a DDS file	*/
-	/* error check */
-	if( (fake_HDR_format != SOIL_HDR_RGBE) &&
-		(fake_HDR_format != SOIL_HDR_RGBdivA) &&
-		(fake_HDR_format != SOIL_HDR_RGBdivA2) )
-	{
-		result_string_pointer = "Invalid fake HDR format specified";
-		return 0;
-	}
-
-	/* check if the image is HDR */
-	if ( stbi_is_hdr( filename ) )
-	{
-		/*	try to load the image (only the HDR type) */
-		img = stbi_load( filename, &width, &height, &channels, 4 );
-	}
-
-	/*	channels holds the original number of channels, which may have been forced	*/
-	if( NULL == img )
-	{
-		/*	image loading failed	*/
-		result_string_pointer = stbi_failure_reason();
-		return 0;
-	}
-	/* the load worked, do I need to convert it? */
-	if( fake_HDR_format == SOIL_HDR_RGBdivA )
-	{
-		RGBE_to_RGBdivA( img, width, height, rescale_to_max );
-	} else if( fake_HDR_format == SOIL_HDR_RGBdivA2 )
-	{
-		RGBE_to_RGBdivA2( img, width, height, rescale_to_max );
-	}
-	/*	OK, make it a texture!	*/
-	/*	and nuke the image data	*/
-	SOIL_free_image_data( img );
-	/*	and return the handle, such as it is	*/
-	return tex_id;
+	return 0;
 }
 
 unsigned int
@@ -1096,66 +1014,7 @@ static void createMipmaps(const unsigned char *const img,
 		unsigned int original_texture_format,
 		int DXT_mode)
 {
-	if ( ( flags & SOIL_FLAG_GL_MIPMAPS ) && query_gen_mipmap_capability() == SOIL_CAPABILITY_PRESENT )
-	{
-		soilGlGenerateMipmap(opengl_texture_target);
-	}
-	else
-	{
-		int MIPlevel = 1;
-		int MIPwidth = (width+1) / 2;
-		int MIPheight = (height+1) / 2;
-		unsigned char *resampled = (unsigned char*)malloc( channels*MIPwidth*MIPheight );
 
-		while( ((1<<MIPlevel) <= width) || ((1<<MIPlevel) <= height) )
-		{
-			/*	do this MIPmap level	*/
-			mipmap_image(
-					img, width, height, channels,
-					resampled,
-					(1 << MIPlevel), (1 << MIPlevel) );
-
-			/*  upload the MIPmaps	*/
-			if( DXT_mode == SOIL_CAPABILITY_PRESENT )
-			{
-				/*	user wants me to do the DXT conversion!	*/
-				int DDS_size;
-				unsigned char *DDS_data = NULL;
-				if( (channels & 1) == 1 )
-				{
-					/*	RGB, use DXT1	*/
-					DDS_data = convert_image_to_DXT1(
-							resampled, MIPwidth, MIPheight, channels, &DDS_size );
-				} else
-				{
-					/*	RGBA, use DXT5	*/
-					DDS_data = convert_image_to_DXT5(
-							resampled, MIPwidth, MIPheight, channels, &DDS_size );
-				}
-				if( DDS_data )
-				{
-					
-					check_for_GL_errors( "glCompressedTexImage2D" );
-					SOIL_free_image_data( DDS_data );
-				} else
-				{
-					/*	my compression failed, try the OpenGL driver's version	*/
-					
-					check_for_GL_errors( "glTexImage2D" );
-				}
-			} else
-			{
-				/*	user want OpenGL to do all the work!	*/
-				check_for_GL_errors( "glTexImage2D" );
-			}
-			/*	prep for the next level	*/
-			++MIPlevel;
-			MIPwidth = (MIPwidth + 1) / 2;
-			MIPheight = (MIPheight + 1) / 2;
-		}
-
-		SOIL_free_image_data( resampled );
-	}
 }
 
 unsigned int
@@ -1656,134 +1515,4 @@ int query_PVR_capability( void )
 	}
 	/*	let the user know if we can do cubemaps or not	*/
 	return has_PVR_capability;
-}
-
-int query_BGRA8888_capability( void )
-{
-	/*	check for the capability	*/
-	if( has_BGRA8888_capability == SOIL_CAPABILITY_UNKNOWN )
-	{
-		/*	we haven't yet checked for the capability, do so	*/
-		if (0 == SOIL_GL_ExtensionSupported(
-				"GL_IMG_texture_format_BGRA8888" ) )
-		{
-			/*	not there, flag the failure	*/
-			has_BGRA8888_capability = SOIL_CAPABILITY_NONE;
-		} else
-		{
-			/*	it's there!	*/
-			has_BGRA8888_capability = SOIL_CAPABILITY_PRESENT;
-		}
-	}
-	/*	let the user know if we can do cubemaps or not	*/
-	return has_BGRA8888_capability;
-}
-
-int query_sRGB_capability( void )
-{
-	if ( has_sRGB_capability == SOIL_CAPABILITY_UNKNOWN )
-	{
-		if (0 == SOIL_GL_ExtensionSupported(
-				"GL_EXT_texture_sRGB" )
-				&&
-			0 == SOIL_GL_ExtensionSupported(
-				"GL_EXT_sRGB" )
-				&&
-			0 == SOIL_GL_ExtensionSupported(
-				"EXT_sRGB" ) )
-		{
-			has_sRGB_capability = SOIL_CAPABILITY_NONE;
-		} else
-		{
-			has_sRGB_capability = SOIL_CAPABILITY_PRESENT;
-		}
-	}
-
-	return has_sRGB_capability;
-}
-
-int query_ETC1_capability( void )
-{
-	/*	check for the capability	*/
-	if( has_ETC1_capability == SOIL_CAPABILITY_UNKNOWN )
-	{
-		/*	we haven't yet checked for the capability, do so	*/
-		if (0 == SOIL_GL_ExtensionSupported(
-				"GL_OES_compressed_ETC1_RGB8_texture" ) )
-		{
-			/*	not there, flag the failure	*/
-			has_ETC1_capability = SOIL_CAPABILITY_NONE;
-		} else
-		{
-			if ( NULL == soilGlCompressedTexImage2D ) {
-				soilGlCompressedTexImage2D = get_glCompressedTexImage2D_addr();
-			}
-
-			/*	it's there!	*/
-			has_ETC1_capability = SOIL_CAPABILITY_PRESENT;
-		}
-	}
-	/*	let the user know if we can do cubemaps or not	*/
-	return has_ETC1_capability;
-}
-
-int query_gen_mipmap_capability( void )
-{
-	/* check for the capability   */
-	P_SOIL_GLGENERATEMIPMAPPROC ext_addr = NULL;
-
-	if( has_gen_mipmap_capability == SOIL_CAPABILITY_UNKNOWN )
-	{
-		if (	0 == SOIL_GL_ExtensionSupported(
-					"GL_ARB_framebuffer_object" )
-			&&
-				0 == SOIL_GL_ExtensionSupported(
-					"GL_EXT_framebuffer_object" )
-			&&  0 == SOIL_GL_ExtensionSupported(
-					"GL_OES_framebuffer_object" )
-			)
-		{
-			/* not there, flag the failure */
-			has_gen_mipmap_capability = SOIL_CAPABILITY_NONE;
-		}
-		else
-		{
-			#if !defined( SOIL_GLES1 ) && !defined( SOIL_GLES2 )
-
-			ext_addr = (P_SOIL_GLGENERATEMIPMAPPROC)SOIL_GL_GetProcAddress("glGenerateMipmap");
-
-			if(ext_addr == NULL)
-			{
-				ext_addr = (P_SOIL_GLGENERATEMIPMAPPROC)SOIL_GL_GetProcAddress("glGenerateMipmapEXT");
-			}
-
-			#elif !defined( SOIL_NO_EGL )
-
-			ext_addr = (P_SOIL_GLGENERATEMIPMAPPROC)SOIL_GL_GetProcAddress("glGenerateMipmapOES");
-
-			if(ext_addr == NULL)
-			{
-				ext_addr = (P_SOIL_GLGENERATEMIPMAPPROC)SOIL_GL_GetProcAddress("glGenerateMipmap");
-			}
-
-			#elif defined( SOIL_GLES2 )
-				ext_addr = 	&glGenerateMipmap;
-			#else /** SOIL_GLES1 */
-				ext_addr = &glGenerateMipmapOES;
-			#endif
-		}
-
-		if(ext_addr == NULL)
-		{
-			/* this should never happen */
-			has_gen_mipmap_capability = SOIL_CAPABILITY_NONE;
-		} else
-		{
-			/* it's there! */
-			has_gen_mipmap_capability = SOIL_CAPABILITY_PRESENT;
-			soilGlGenerateMipmap = ext_addr;
-		}
-	}
-
-	return has_gen_mipmap_capability;
 }

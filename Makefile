@@ -45,8 +45,8 @@ STATIC_NAME	=	libSOIL2.a
 DYNAMIC_NAME=	libSOIL2.so
 
 #	Compiler
-WERROR		=	-Werror
-CFLAGS		=	-fPIC
+WERROR		=	-Wall
+CFLAGS		=	
 CPROTECTION	=	-z execstack -fno-stack-protector
 
 DEBUGFLAGS1	=	-ggdb -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0
@@ -102,7 +102,7 @@ VFRAME		=	$(addprefix -framework ,$(FRAMEWORK))
 INCFILES	=	$(foreach inc, $(INCDIRS), $(wildcard $(inc)/*.h))
 CPPFLAGS	=	$(addprefix -I,$(INCDIRS))
 LDFLAGS		=	$(addprefix -L,$(LIBDIRS))
-STATIC_LINKER=	ar rc
+STATIC_LINKER=	ar rcs
 DYNAMIC_LINKER=	$(CC)
 CURRENT_DIR	= $(shell pwd)
 
@@ -154,9 +154,10 @@ ifeq "$(OS)" "Linux"
 	LDLIBS		+= ""
 	DEBUGFLAGS	+= " -fsanitize=memory -fsanitize-memory-use-after-dtor -fsanitize=thread"
 	FRAMEWORK	=
+	CFLAGS += -fPIC
 endif
 ifeq "$(OS)" "Darwin"
-	CFLAGS += -DGL_SILENCE_DEPRECATION
+	CFLAGS += -DGL_SILENCE_DEPRECATION -fPIC
 	INSTALL_NAME = -install_name $(CURRENT_DIR)/$(DYNAMIC_NAME)
 endif
 
