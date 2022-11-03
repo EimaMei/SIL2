@@ -1,6 +1,8 @@
-Simple OpenGL Image Library 2
+Simple ~~OpenGL~~ Image Library 2
 ==========================
-
+# Main difference of this fork.
+Since I only needed the image manipulation part of this library, I've decided to just remove all OpenGL calls that this library uses. As such, this is just the exact same repository but now the OpenGL-dependent functions have been removed (so not only do you not need to link OpenGL anymore, but also the library size becomes smaller).
+# Original README.md
 **Introduction:**
 --------------
 
